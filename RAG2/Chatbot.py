@@ -15,16 +15,19 @@ from pptx import Presentation
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+# Ajout des imports pour PDF
+from pypdf import PdfReader
+
 import dotenv
 dotenv.load_dotenv()
 
 EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
 LLM_MODEL = "gemma3"
-DB_DIR = "vectore/chroma_pptx_db"
+DB_DIR = "vectore/chroma_docs_db"
 DATA_DIR = "documents"
 
 
-class PPTXOptimizedRAG:
+class DocumentRAG:
     def __init__(self, data_dir: str = DATA_DIR, db_dir: str = DB_DIR, rebuild: bool = False):
         self.data_dir = data_dir
         self.db_dir = db_dir
@@ -54,20 +57,28 @@ class PPTXOptimizedRAG:
     
     def _build_vectorstore(self) -> Chroma:
         """Process documents and build vectorstore"""
-        print("Processing PPTX documents and building vectorstore...")
-        documents = self._process_pptx_files()
+        print("Processing documents and building vectorstore...")
+        
+        # Traitement des fichiers PPTX
+        pptx_documents = self._process_pptx_files()
+        print(f"Extracted {len(pptx_documents)} slides from presentations")
+        
+        # Traitement des fichiers PDF
+        pdf_documents = self._process_pdf_files()
+        print(f"Extracted {len(pdf_documents)} pages from PDF documents")
+        
+        # Combiner tous les documents
+        documents = pptx_documents + pdf_documents
         
         if not documents:
-            raise ValueError("Aucun contenu n'a été extrait des présentations. Vérifiez les fichiers PPTX.")
-        
-        print(f"Extracted {len(documents)} slides from presentations")
+            raise ValueError("Aucun contenu n'a été extrait des documents. Vérifiez les fichiers.")
         
         chunks = self._create_chunks(documents)
         
         if not chunks:
-            raise ValueError("Aucun chunk n'a été créé à partir des documents. Vérifiez le contenu des présentations.")
+            raise ValueError("Aucun chunk n'a été créé à partir des documents. Vérifiez le contenu.")
         
-        print(f"Created {len(chunks)} chunks from slide content")
+        print(f"Created {len(chunks)} chunks from document content")
         
         vectorstore = Chroma.from_documents(
             documents=chunks,
@@ -77,6 +88,49 @@ class PPTXOptimizedRAG:
         print(f"Vectorstore built successfully with {len(chunks)} chunks")
         return vectorstore
 
+    def _process_pdf_files(self) -> List[Document]:
+        """Process PDF files and extract content"""
+        documents = []
+        
+        for file_path in Path(self.data_dir).glob("**/*.pdf"):
+            try:
+                print(f"Processing PDF: {file_path}")
+                pdf = PdfReader(file_path)
+                
+                pdf_metadata = {
+                    "source": str(file_path),
+                    "file_name": file_path.name,
+                    "file_type": ".pdf",
+                    "total_pages": len(pdf.pages)
+                }
+                
+                for page_idx, page in enumerate(pdf.pages):
+                    page_num = page_idx + 1
+                    
+                    text = page.extract_text()
+                    
+                    if not text.strip():
+                        print(f"  Skipping empty page {page_num}")
+                        continue
+                    
+                    page_content = f"Page {page_num}\n\n{text}"
+                    
+                    page_metadata = {
+                        **pdf_metadata,
+                        "page_number": page_num
+                    }
+                    
+                    doc = Document(
+                        page_content=page_content,
+                        metadata=page_metadata
+                    )
+                    documents.append(doc)
+                    print(f"  Processed page {page_num} ({len(text)} chars)")
+                
+            except Exception as e:
+                print(f"Error processing {file_path}: {str(e)}")
+        
+        return documents
     
     def _process_pptx_files(self) -> List[Document]:
         """Basic but reliable PPTX file processing"""
@@ -186,52 +240,72 @@ class PPTXOptimizedRAG:
                 
                 all_chunks.extend(doc_chunks)
             except Exception as e:
-                print(f"Error creating chunks for slide {doc.metadata.get('slide_number', 'unknown')}: {e}")
+                file_type = doc.metadata.get('file_type', 'unknown')
+                if file_type == '.pptx':
+                    item_num = doc.metadata.get('slide_number', 'unknown')
+                    item_type = 'slide'
+                else:
+                    item_num = doc.metadata.get('page_number', 'unknown')
+                    item_type = 'page'
+                    
+                print(f"Error creating chunks for {item_type} {item_num}: {e}")
         
         return all_chunks
     
     def _create_rag_chain(self):
-        """Create the RAG chain with presentation-specific context handling"""
+        """Create the RAG chain with document-specific context handling"""
 
         context_prompt = ChatPromptTemplate.from_template(
-            """You are an expert in analyzing presentations and slide decks.
+            """
+            Vous êtes un assistant factuel spécialisé dans l'analyse de documents tout en maintenant l'historique de la conversation.
             
-            Answer the question based on the following slides and content from presentations:
-            
+            CONTEXTE RÉCUPÉRÉ :
             {context}
             
-            IMPORTANT GUIDELINES:
-            1. Base your answer ONLY on the provided slides, not general knowledge
-            2. If information is spread across multiple slides, synthesize it
-            3. Mention which presentations and slides contain the information
-            4. If the slides don't contain enough information, say so clearly
-            5. Remember that presentations often have incomplete sentences and bullet points
+            Directives :
+            1. Si des informations manquent dans le contexte, répondez : "Je n'ai pas suffisamment de données pour répondre précisément à cela."
+            2. Citez des extraits pertinents du document pour appuyer vos réponses.
+            3. Ne jamais inventer d'informations ni utiliser de connaissances externes.
+            4. Maintenez un ton de conversation naturel.
+            5. Faites référence à l'historique de la conversation lorsqu'il est pertinent.
             
-            Question: {question}
+            Question : {question}
+            
+            Réponse :
             """
         )
         
         def _format_docs(docs):
             
-            presentations = {}
+            documents = {}
             for doc in docs:
                 source = doc.metadata.get("file_name", "Unknown")
-                if source not in presentations:
-                    presentations[source] = {}
+                file_type = doc.metadata.get("file_type", "Unknown")
                 
-                slide_num = doc.metadata.get("slide_number", 0)
-                if slide_num not in presentations[source]:
-                    presentations[source][slide_num] = []
+                if source not in documents:
+                    documents[source] = {"type": file_type, "items": {}}
                 
-                presentations[source][slide_num].append(doc.page_content)
-            
+                if file_type == ".pptx":
+                    item_num = doc.metadata.get("slide_number", 0)
+                    item_type = "Slide"
+                else:
+                    item_num = doc.metadata.get("page_number", 0)
+                    item_type = "Page"
+                
+                if item_num not in documents[source]["items"]:
+                    documents[source]["items"][item_num] = []
+                
+                documents[source]["items"][item_num].append(doc.page_content)
             
             formatted = []
-            for pres, slides in presentations.items():
-                formatted.append(f"Presentation: {pres}")
-                for slide_num in sorted(slides.keys()):
-                    slide_content = "\n".join(slides[slide_num])
-                    formatted.append(f"  Slide {slide_num}: {slide_content}")
+            for doc_name, doc_info in documents.items():
+                doc_type = "Presentation" if doc_info["type"] == ".pptx" else "Document"
+                formatted.append(f"{doc_type}: {doc_name}")
+                
+                for item_num in sorted(doc_info["items"].keys()):
+                    item_type = "Slide" if doc_info["type"] == ".pptx" else "Page"
+                    item_content = "\n".join(doc_info["items"][item_num])
+                    formatted.append(f"  {item_type} {item_num}: {item_content}")
                 formatted.append("")
             
             return "\n".join(formatted)
@@ -268,9 +342,16 @@ class PPTXOptimizedRAG:
             
             for doc in docs:
                 source = doc.metadata.get("file_name", "Inconnu")
-                slide = doc.metadata.get("slide_number", "?")
+                file_type = doc.metadata.get("file_type", ".pptx")
                 
-                key = f"{source} (Slide {slide})"
+                if file_type == ".pptx":
+                    item_num = doc.metadata.get("slide_number", "?")
+                    item_type = "Slide"
+                else:
+                    item_num = doc.metadata.get("page_number", "?")
+                    item_type = "Page"
+                
+                key = f"{source} ({item_type} {item_num})"
                 if key not in sources:
                     sources[key] = True
                     
@@ -280,27 +361,22 @@ class PPTXOptimizedRAG:
             return ""
 
 
-
-
-
-
-
 def main():
     """Main entry point for the application"""
     
-    parser = argparse.ArgumentParser(description="PPTX-Optimized RAG System")
+    parser = argparse.ArgumentParser(description="Document RAG System")
     parser.add_argument("--rebuild", action="store_true", help="Rebuild the vector database")
     parser.add_argument("--query", type=str, help="Run a specific query in non-interactive mode")
     args = parser.parse_args()
     
-    rag = PPTXOptimizedRAG(rebuild=args.rebuild)
+    rag = DocumentRAG(rebuild=args.rebuild)
     
     if args.query:
         result = rag.query(args.query)
         print(f"\nQuery: {args.query}\n")
         print(f"Response: {result}\n")
     else:
-        print("PPTX-Optimized RAG System initialized. Type 'exit' to quit.")
+        print("Document RAG System initialized. Type 'exit' to quit.")
         
         while True:
             query = input("You: ")
@@ -309,11 +385,6 @@ def main():
             
             response = rag.query(query)
             print(f"Bot: {response}\n")
-
-
-
-
-
 
 
 if __name__ == "__main__":

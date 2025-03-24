@@ -22,9 +22,6 @@ DATA_PATH = "documents"
 PROMPT_TEMPLATE = """
 Vous êtes un assistant factuel spécialisé dans l'analyse de documents tout en maintenant l'historique de la conversation.
 
-HISTORIQUE DE LA CONVERSATION :
-{history}
-
 CONTEXTE RÉCUPÉRÉ :
 {context}
 
@@ -44,8 +41,7 @@ Réponse :
 """PROMPT_TEMPLATE = 
 You are a factual assistant specialized in analyzing documents while maintaining conversation history.
 
-CONVERSATION HISTORY:
-{history}
+
 
 RETRIEVED CONTEXT:
 {context}
@@ -281,7 +277,7 @@ def query_rag(query_text, pipeline, history=""):
     prompt = prompt_template.format(
         context=context, 
         question=query_text,
-        history=history
+        #history=history
     )
     
     # Get response from LLM
@@ -317,7 +313,7 @@ def handle_conversation_with_rag():
         print(f"\nSources: {', '.join(sources[:3])}...\n")
         
         # Update conversation history
-        history += f"\nUser: {user_input}\nAI: {result}"
+        #history += f"\nUser: {user_input}\nAI: {result}"
 
 
 
