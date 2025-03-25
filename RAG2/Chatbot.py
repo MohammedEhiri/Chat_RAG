@@ -3,20 +3,19 @@ import argparse
 
 from typing import List, Dict, Optional
 from pathlib import Path
-import tempfile
 
 from langchain_chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.documents import Document
 from langchain_ollama import OllamaLLM
-from pptx import Presentation
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-# Ajout des imports pour PDF
 from pypdf import PdfReader
+from pptx import Presentation
+
+import gradio as gr
+
 
 import dotenv
 dotenv.load_dotenv()
@@ -376,15 +375,29 @@ def main():
         print(f"\nQuery: {args.query}\n")
         print(f"Response: {result}\n")
     else:
-        print("Document RAG System initialized. Type 'exit' to quit.")
-        
-        while True:
-            query = input("You: ")
-            if query.lower() == "exit":
-                break
-            
-            response = rag.query(query)
-            print(f"Bot: {response}\n")
+        # Lancez l'interface Gradio
+        with gr.Blocks() as demo:
+            chatbot = gr.Chatbot()
+            msg = gr.Textbox(label="Entrez votre question")
+            clear = gr.Button("Nouvelle conversation")
+
+            def user(message, history):
+                return "", history + [[message, None]]
+
+            def bot(history):
+                question = history[-1][0]
+                response = rag.query(question)
+                history[-1][1] = response
+                return history
+
+            msg.submit(user, [msg, chatbot], [msg, chatbot], queue=False).then(
+                bot, chatbot, chatbot
+            )
+            clear.click(lambda: None, None, chatbot, queue=False)
+
+        demo.launch()
+
+
 
 
 if __name__ == "__main__":
