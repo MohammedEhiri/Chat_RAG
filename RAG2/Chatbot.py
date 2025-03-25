@@ -1,7 +1,7 @@
 import os
 import argparse
-
-from typing import List, Dict, Optional
+import time
+from typing import List, Dict, Optional, Generator
 from pathlib import Path
 
 from langchain_chroma import Chroma
@@ -15,7 +15,8 @@ from pypdf import PdfReader
 from pptx import Presentation
 
 import gradio as gr
-
+from gradio.themes.utils import colors, sizes
+from gradio.themes import Base as ThemeBase
 
 import dotenv
 dotenv.load_dotenv()
@@ -24,6 +25,41 @@ EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
 LLM_MODEL = "gemma3"
 DB_DIR = "vectore/chroma_docs_db"
 DATA_DIR = "documents"
+
+
+class CustomTheme(ThemeBase):
+    def __init__(self):
+        super().__init__(
+            primary_hue=colors.blue,
+            secondary_hue=colors.cyan,
+            neutral_hue=colors.gray,
+            spacing_size=sizes.spacing_md,
+            radius_size=sizes.radius_md,
+            text_size=sizes.text_md,
+        )
+    def set_styles(self):
+        super().set_styles()
+        self.styles.update({
+            "button": {
+                "padding": f"{sizes.spacing_sm} {sizes.spacing_md}",
+                "border_radius": sizes.radius_md,
+            },
+            "button_primary": {
+                "background": f"linear-gradient(to right, {colors.blue[600]}, {colors.blue[500]})",
+                "color": colors.white,
+                "_hover": {
+                    "background": f"linear-gradient(to right, {colors.blue[700]}, {colors.blue[600]})",
+                }
+            },
+            "chatbot": {
+                "border_radius": sizes.radius_lg,
+                "box_shadow": f"0 2px 8px {colors.gray[200]}",
+            },
+            "input": {
+                "border_radius": sizes.radius_lg,
+                "box_shadow": f"0 2px 8px {colors.gray[200]}",
+            }
+        })
 
 
 class DocumentRAG:
@@ -320,8 +356,23 @@ class DocumentRAG:
         
         return rag_chain
     
+    def query_stream(self, question: str) -> Generator[str, None, None]:
+        """Process query and stream response"""
+        try:
+            full_response = ""
+            for chunk in self.rag_chain.stream(question):
+                full_response += chunk
+                yield full_response
+            
+            sources = self._get_sources(question)
+            if sources:
+                yield f"{full_response}\n\nSources:\n{sources}"
+                
+        except Exception as e:
+            yield f"Erreur : {str(e)}"
+    
     def query(self, question: str) -> str:
-        """Process query and return response"""
+        """Process query and return complete response"""
         try:
             result = self.rag_chain.invoke(question)
             
@@ -375,29 +426,101 @@ def main():
         print(f"\nQuery: {args.query}\n")
         print(f"Response: {result}\n")
     else:
-        # Lancez l'interface Gradio
-        with gr.Blocks() as demo:
-            chatbot = gr.Chatbot()
-            msg = gr.Textbox(label="Entrez votre question")
-            clear = gr.Button("Nouvelle conversation")
-
-            def user(message, history):
-                return "", history + [[message, None]]
-
-            def bot(history):
-                question = history[-1][0]
-                response = rag.query(question)
-                history[-1][1] = response
-                return history
-
-            msg.submit(user, [msg, chatbot], [msg, chatbot], queue=False).then(
-                bot, chatbot, chatbot
+        custom_theme = CustomTheme()
+        
+        with gr.Blocks(theme=custom_theme, title="Assistant Documentaire RAG") as demo:
+            gr.Markdown("""
+            # 📚 Assistant Documentaire RAG
+            Posez des questions sur vos documents et obtenez des réponses précises basées sur leur contenu.
+            """)
+            
+            chatbot = gr.Chatbot(
+                height=600,
+                bubble_full_width=False,
+                avatar_images=(
+                    "assets/user.png", 
+                    "assets/assistant.png"
+                )
             )
-            clear.click(lambda: None, None, chatbot, queue=False)
+            
+            with gr.Row():
+                msg = gr.Textbox(
+                    placeholder="Posez votre question ici...",
+                    scale=7,
+                    container=False,
+                    autofocus=True
+                )
+                submit_btn = gr.Button("Envoyer", variant="primary", scale=1)
+                clear_btn = gr.Button("Nouvelle conversation", variant="secondary", scale=1)
+            
+            with gr.Accordion("Options avancées", open=False):
+                gr.Markdown("""
+                - Le système recherche dans les documents PDF et PPTX
+                - Les réponses sont générées uniquement à partir du contenu des documents
+                """)
+            
+            status = gr.Textbox(
+                value="Système prêt à répondre à vos questions",
+                interactive=False,
+                label="Statut"
+            )
+            
+            def user(message, chat_history):
+                return "", chat_history + [[message, None]]
+            
+            def bot(chat_history):
+                question = chat_history[-1][0]
+                
+                status.value = "Recherche dans les documents..."
+                yield gr.update(), gr.update(), gr.update()
+                
+                try:
+                    full_response = ""
+                    for chunk in rag.query_stream(question):
+                        full_response = chunk
+                        chat_history[-1][1] = full_response
+                        yield "", chat_history, "✍️ Génération de la réponse..."
+                    
+                    if "Sources:" in full_response:
+                        status.value = "Réponse générée avec sources"
+                    else:
+                        status.value = "Réponse générée"
+                    
+                    yield "", chat_history, status.value
+                    
+                except Exception as e:
+                    status.value = f"Erreur: {str(e)}"
+                    chat_history[-1][1] = f"Une erreur est survenue: {str(e)}"
+                    yield "", chat_history, status.value
+            
+            msg.submit(
+                user, [msg, chatbot], [msg, chatbot], queue=False
+            ).then(
+                bot, chatbot, [msg, chatbot, status]
+            )
+            
+            submit_btn.click(
+                user, [msg, chatbot], [msg, chatbot], queue=False
+            ).then(
+                bot, chatbot, [msg, chatbot, status]
+            )
+            
+            clear_btn.click(
+                lambda: ([], "Prêt pour une nouvelle conversation"),
+                None, [chatbot, status], queue=False
+            )
+            
+            gr.Examples(
+                examples=[
+                    "Quel est le sujet principal de ce document?",
+                    "Résumez les points clés de la présentation",
+                    "Quelles sont les conclusions principales?"
+                ],
+                inputs=msg,
+                label="Exemples de questions"
+            )
 
         demo.launch()
-
-
 
 
 if __name__ == "__main__":
