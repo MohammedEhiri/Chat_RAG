@@ -1,10 +1,15 @@
 import os
 import argparse
 import re
+import json
+import datetime
 from typing import List, Dict, Optional, Generator, Tuple
 from pathlib import Path
 from io import BytesIO
 import tempfile
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
 from langchain_chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -20,9 +25,6 @@ import gradio as gr
 from gradio.themes.utils import colors, sizes
 from gradio.themes import Base as ThemeBase
 
-from office365.sharepoint.client_context import ClientContext
-from office365.sharepoint.files.file import File
-from office365.runtime.auth.user_credential import UserCredential
 
 import dotenv
 dotenv.load_dotenv()
@@ -32,53 +34,6 @@ LLM_MODEL = "gemma3"
 DB_DIR = "vectore/chroma_docs_db"
 DATA_DIR = "documents"
 
-
-class SharePointClient:
-    def __init__(self, site_url: str, username: str, password: str):
-        self.site_url = site_url
-        self.ctx = ClientContext(site_url).with_credentials(
-            UserCredential(username, password)
-        )
-
-    def download_folder_contents(self, folder_url: str, local_path: str) -> List[Tuple[str, str]]:
-        """Download all files from SharePoint folder recursively"""
-        downloaded_files = []
-        folder = self.ctx.web.get_folder_by_server_relative_url(folder_url)
-        self.ctx.load(folder)
-        self.ctx.execute_query()
-
-        files = folder.files
-        self.ctx.load(files)
-        self.ctx.execute_query()
-
-        # Ensure local directory exists
-        os.makedirs(local_path, exist_ok=True)
-
-        for file in files:
-            try:
-                # Download file content
-                file_content = File.open_binary(self.ctx, file.serverRelativeUrl)
-                
-                # Save to local file
-                file_path = os.path.join(local_path, file.name)
-                with open(file_path, "wb") as f:
-                    f.write(file_content.content)
-                
-                downloaded_files.append((file.name, file_path))
-                print(f"Downloaded: {file.name}")
-            except Exception as e:
-                print(f"Error downloading {file.name}: {str(e)}")
-
-        # Process subfolders recursively
-        folders = folder.folders
-        self.ctx.load(folders)
-        self.ctx.execute_query()
-
-        for subfolder in folders:
-            subfolder_path = os.path.join(local_path, subfolder.name)
-            downloaded_files.extend( self.download_folder_contents(subfolder.serverRelativeUrl, subfolder_path))
-        
-        return downloaded_files
 
 
 class CustomTheme(ThemeBase):
@@ -123,10 +78,7 @@ class DocumentRAG:
         self.data_dir = data_dir
         self.db_dir = db_dir
         
-        # Download from SharePoint if configured
-        if sharepoint_config:
-            self._download_from_sharepoint(sharepoint_config)
-        
+
         self.embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
         self.llm = OllamaLLM(model=LLM_MODEL)
         
@@ -149,35 +101,29 @@ class DocumentRAG:
         
         self.rag_chain = self._create_rag_chain()
     
-    def _download_from_sharepoint(self, config: Dict):
-        """Download documents from SharePoint"""
-        print("Downloading documents from SharePoint...")
-        
-        # Create temp directory if using SharePoint
-        if not os.path.exists(self.data_dir):
-            os.makedirs(self.data_dir)
-        
-        try:
-            sp_client = SharePointClient(
-                site_url=config["site_url"],
-                username=config["username"],
-                password=config["password"]
-            )
-            
-            downloaded = sp_client.download_folder_contents(
-                folder_url=config["folder_url"],
-                local_path=self.data_dir
-            )
-            print(f"Downloaded {len(downloaded)} files from SharePoint")
-        except Exception as e:
-            print(f"Error downloading from SharePoint: {str(e)}")
-            raise
     
     def _build_vectorstore(self) -> Chroma:
-        """Process documents and build vectorstore"""
-        print("Processing documents and building vectorstore...")
+        """Process documents and build vectorstore with caching"""
+        cache_file = os.path.join(self.db_dir, "document_cache.json")
         
-        # Process all document types
+        # Check if cache exists and is valid
+        if os.path.exists(cache_file):
+            try:
+                with open(cache_file, 'r') as f:
+                    cache = json.load(f)
+                    if cache.get("timestamp") and cache.get("files"):
+                        # Check if files have changed
+                        current_files = set([f.name for f in Path(self.data_dir).glob("**/*") if f.is_file()])
+                        if set(cache["files"]) == current_files:
+                            print("Using cached document processing")
+                            return Chroma(
+                                persist_directory=self.db_dir,
+                                embedding_function=self.embeddings
+                            )
+            except Exception as e:
+                print(f"Cache validation error: {str(e)}")
+
+        # Process documents
         pptx_documents = self._process_pptx_files()
         print(f"Extracted {len(pptx_documents)} slides from presentations")
         
@@ -187,13 +133,13 @@ class DocumentRAG:
         word_documents = self._process_word_files()
         print(f"Extracted {len(word_documents)} sections from Word documents")
         
-        # Combine all documents
         documents = pptx_documents + pdf_documents + word_documents
         
         if not documents:
             raise ValueError("No content extracted from documents. Please check your files.")
         
-        chunks = self._create_chunks(documents)
+        # Create chunks with parallel processing
+        chunks = self._create_chunks_parallel(documents)
         
         if not chunks:
             raise ValueError("No chunks created from document content. Please check the content.")
@@ -206,6 +152,15 @@ class DocumentRAG:
             persist_directory=self.db_dir
         )
         print(f"Vectorstore built successfully with {len(chunks)} chunks")
+        
+        # Save cache
+        cache = {
+            "timestamp": datetime.datetime.now().isoformat(),
+            "files": [f.name for f in Path(self.data_dir).glob("**/*") if f.is_file()]
+        }
+        with open(cache_file, 'w') as f:
+            json.dump(cache, f)
+        
         return vectorstore
 
     def _process_pdf_files(self) -> List[Document]:
@@ -251,7 +206,7 @@ class DocumentRAG:
                 print(f"Error processing {file_path}: {str(e)}")
         
         return documents
-    
+
     def _process_pptx_files(self) -> List[Document]:
         """Process PowerPoint files and extract content"""
         documents = []
@@ -295,7 +250,7 @@ class DocumentRAG:
                 print(f"Error processing {file_path}: {str(e)}")
         
         return documents
-    
+
     def _process_word_files(self) -> List[Document]:
         """Process Word files and extract content"""
         documents = []
@@ -347,7 +302,7 @@ class DocumentRAG:
                 print(f"Error processing {file_path}: {str(e)}")
         
         return documents
-    
+
     def _extract_all_text(self, slide) -> str:
         """Extract all text from a slide without assumptions about structure"""
         text_parts = []
@@ -362,7 +317,7 @@ class DocumentRAG:
                 text_parts.append(table_text)
         
         return "\n".join(text_parts)
-    
+
     def _get_text_from_shape(self, shape) -> str:
         """Extract text from a shape safely"""
         try:
@@ -373,7 +328,7 @@ class DocumentRAG:
         except:
             pass
         return ""
-    
+
     def _get_text_from_table(self, shape) -> str:
         """Extract text from a table shape safely"""
         try:
@@ -391,61 +346,49 @@ class DocumentRAG:
         except:
             pass
         return ""
-    
-    def _create_chunks(self, documents: List[Document]) -> List[Document]:
-        """Create chunks from documents"""
+
+    def _create_chunks_parallel(self, documents: List[Document]) -> List[Document]:
+        """Create chunks from documents using parallel processing"""
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=500,
             chunk_overlap=100,
             separators=["\n\n", "\n", ". ", ", ", " ", ""]
         )
         
-        all_chunks = []
-        
-        for doc in documents:
-            try:
-                doc_chunks = splitter.split_documents([doc])
-                
+        with ThreadPoolExecutor() as executor:
+            futures = []
+            for doc in documents:
+                futures.append(executor.submit(splitter.split_documents, [doc]))
+            
+            all_chunks = []
+            for future in futures:
+                doc_chunks = future.result()
                 for chunk in doc_chunks:
-                    for key, value in doc.metadata.items():
+                    for key, value in chunk.metadata.items():
                         chunk.metadata[key] = value
-                
                 all_chunks.extend(doc_chunks)
-            except Exception as e:
-                file_type = doc.metadata.get('file_type', 'unknown')
-                if file_type == '.pptx':
-                    item_num = doc.metadata.get('slide_number', 'unknown')
-                    item_type = 'slide'
-                elif file_type == '.pdf':
-                    item_num = doc.metadata.get('page_number', 'unknown')
-                    item_type = 'page'
-                else:
-                    item_num = 'N/A'
-                    item_type = 'section'
-                    
-                print(f"Error creating chunks for {item_type} {item_num}: {e}")
         
         return all_chunks
-    
+
     def _create_rag_chain(self):
         """Create the RAG chain with document-specific context handling"""
 
         context_prompt = ChatPromptTemplate.from_template(
-            """
+                        """
             Vous êtes un assistant factuel spécialisé dans l'analyse de documents tout en maintenant l'historique de la conversation.
-            
+
             CONTEXTE RÉCUPÉRÉ :
             {context}
-            
+
             Directives :
-            1. Si des informations manquent dans le contexte, répondez : "Je n'ai pas suffisamment de données pour répondre précisément à cela."
-            2. Citez des extraits pertinents du document pour appuyer vos réponses.
+            1. **Répondez directement à la question** en vous basant sur le contexte fourni. Si le contexte ne contient pas une réponse complète à la question, indiquez que vous n'avez pas suffisamment de données pour répondre précisément à cela.
+            2. **Appuyez votre réponse en citant les extraits pertinents du document entre guillemets.** Si possible, mentionnez le nom du fichier et le numéro de page/slide. Si un extrait est long, essayez de le synthétiser tout en conservant les informations clés et en citant les parties essentielles.
             3. Ne jamais inventer d'informations ni utiliser de connaissances externes.
             4. Maintenez un ton de conversation naturel.
             5. Faites référence à l'historique de la conversation lorsqu'il est pertinent.
-            
+
             Question : {question}
-            
+
             Réponse :
             """
         )
@@ -508,22 +451,29 @@ class DocumentRAG:
         )
         
         return rag_chain
-    
+
     def query_stream(self, question: str) -> Generator[str, None, None]:
-        """Process query and stream response"""
+        """Process query and stream response with detailed error messages"""
         try:
             full_response = ""
-            for chunk in self.rag_chain.stream(question):
-                full_response += chunk
-                yield full_response
-            
+            try:
+                for chunk in self.rag_chain.stream(question):
+                    full_response += chunk
+                    yield full_response
+            except ConnectionError as ce:
+                yield f"Erreur de connexion: {str(ce)}"
+            except TimeoutError as te:
+                yield f"Timeout error: {str(te)}"
+            except Exception as e:
+                yield f"Erreur inattendue: {str(e)}"
+                
             sources = self._get_sources(question)
             if sources:
                 yield f"{full_response}\n\nSources:\n{sources}"
                 
         except Exception as e:
-            yield f"Erreur : {str(e)}"
-    
+            yield f"Erreur critique: {str(e)}"
+
     def query(self, question: str) -> str:
         """Process query and return complete response"""
         try:
@@ -536,7 +486,7 @@ class DocumentRAG:
             return result
         except Exception as e:
             return f"Erreur : {str(e)}"
-    
+
     def _get_sources(self, question: str) -> str:
         """Get and format sources for a question"""
         try:
@@ -566,17 +516,69 @@ class DocumentRAG:
             print(f"Error retrieving sources: {e}")
             return ""
 
+    def get_sharepoint_status(self) -> str:
+        """Returns formatted SharePoint connection status"""
+        status = "## SharePoint Status\n"
+        status += f"- **Connection:** {self.sharepoint_status}\n"
+        if self.downloaded_files_count > 0:
+            status += f"- **Documents downloaded:** {self.downloaded_files_count}\n"
+        status += f"- **Local cache:** {self.data_dir}"
+        return status
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import gradio as gr
+from gradio.themes.utils import colors, sizes
+from gradio.themes import Base as ThemeBase
+
+class CustomTheme(ThemeBase):
+    def __init__(self):
+        super().__init__(
+            primary_hue=colors.indigo,
+            secondary_hue=colors.purple,
+            neutral_hue=colors.gray,
+            spacing_size=sizes.spacing_lg,
+            radius_size=sizes.radius_xxl,
+            text_size=sizes.text_md,
+        )
+
+    def set_styles(self):
+        super().set_styles()
+        self.styles.update({
+            "body": {"background": colors.gray[100]},
+            "button": {"border_radius": sizes.radius_md, "font-weight": "500"},
+            "button_primary": {"background": f"linear-gradient(to right, {colors.indigo[600]}, {colors.purple[500]})", "color": colors.white, "_hover": {"background": f"linear-gradient(to right, {colors.indigo[700]}, {colors.purple[600]})"}},
+            "chatbot": {"border-radius": sizes.radius_xl, "box-shadow": f"0 4px 12px {colors.gray[300]}"},
+            "chatbot-message": {"border-radius": sizes.radius_lg, "padding": f"{sizes.spacing_md}"},
+            "chatbot-message--user": {"background-color": colors.blue[100]},
+            "chatbot-message--bot": {"background-color": colors.gray[200]},
+            "textbox": {"border-radius": sizes.radius_lg, "box-shadow": f"0 2px 6px {colors.gray[300]}"},
+            "markdown": {"font-size": sizes.text_lg},
+            "accordion": {"border-radius": sizes.radius_lg, "border": f"1px solid {colors.gray[300]}"},
+            "accordion-content": {"padding": sizes.spacing_md},
+        })
+
 
 def main():
     """Main entry point for the application"""
-    
     parser = argparse.ArgumentParser(description="Document RAG System with SharePoint Integration")
     parser.add_argument("--rebuild", action="store_true", help="Rebuild the vector database")
     parser.add_argument("--query", type=str, help="Run a specific query in non-interactive mode")
     parser.add_argument("--sharepoint", action="store_true", help="Enable SharePoint integration")
     args = parser.parse_args()
     
-    # Configure SharePoint if enabled
     sharepoint_config = None
     if args.sharepoint:
         sharepoint_config = {
@@ -596,128 +598,84 @@ def main():
         print(f"\nQuery: {args.query}\n")
         print(f"Response: {result}\n")
     else:
-        # Launch the improved Gradio interface
         custom_theme = CustomTheme()
-        
-        with gr.Blocks(theme=custom_theme, title="Assistant Documentaire RAG") as demo:
-            # Header
-            gr.Markdown("""
-            # Assistant Documentaire RAG
-            Posez des questions sur vos documents et obtenez des réponses précises basées sur leur contenu.
-            """)
-            
-            # Chat interface
-            chatbot = gr.Chatbot(
-                height=600,
-                bubble_full_width=False,
-                avatar_images=(
-                    "assets/user.png", 
-                    "assets/assistant.png"
-                )
+
+    custom_theme = CustomTheme()
+
+    with gr.Blocks(theme=custom_theme, title="Assistant Documentaire RAG") as demo:
+        gr.Markdown("""
+        # 🚀 Assistant Documentaire Intelligent
+        Posez vos questions sur vos documents et obtenez des réponses claires et sourcées.
+        """)
+
+        if args.sharepoint:
+            with gr.Accordion("Statut SharePoint", open=False):
+                gr.Markdown(rag.get_sharepoint_status())
+
+        chatbot = gr.Chatbot(
+            height=600,
+            bubble_full_width=False,
+            show_label=False # Enlever le label par défaut
+        )
+
+        with gr.Row():
+            msg = gr.Textbox(
+                placeholder="Posez votre question ici...",
+                scale=7,
+                container=False,
+                autofocus=True,
+                show_label=False # Enlever le label par défaut
             )
-            
-            # Input and controls
-            with gr.Row():
-                msg = gr.Textbox(
-                    placeholder="Posez votre question ici...",
-                    scale=7,
-                    container=False,
-                    autofocus=True
-                )
-                submit_btn = gr.Button("Envoyer", variant="primary", scale=1)
-                clear_btn = gr.Button("Nouvelle conversation", variant="secondary", scale=1)
-            
-            # Additional controls
-            with gr.Accordion("Options avancées", open=False):
-                gr.Markdown("""
-                **Sources des documents:**
-                - Système de fichiers local
-                - SharePoint (si configuré)
-                
-                **Formats supportés:**
-                - Documents Word (.docx)
-                - Présentations PowerPoint (.pptx)
-                - Fichiers PDF (.pdf)
-                
-                **Fonctionnalités:**
-                - Réponses basées uniquement sur le contenu des documents
-                - Streaming des réponses en temps réel
-                - Références aux sources originales
-                """)
-            
-            # System status
-            status = gr.Textbox(
-                value="Système prêt à répondre à vos questions",
-                interactive=False,
-                label="Statut"
-            )
-            
-            # Chat functions
-            def user(message, chat_history):
+            submit_btn = gr.Button("Envoyer", variant="primary", scale=1)
+            clear_btn = gr.Button("Effacer", variant="secondary", scale=1)
+
+        status = gr.Textbox(
+            value="✅ Prêt à répondre aux questions",
+            interactive=False,
+            label="Statut" # Label plus court
+        )
+
+        def user(message, chat_history):
                 return "", chat_history + [[message, None]]
             
-            def bot(chat_history):
+        def bot(chat_history):
                 question = chat_history[-1][0]
-                
-                # Update status
-                status.value = "🔍 Recherche dans les documents..."
-                yield gr.update(), gr.update(), gr.update()
+                status.value = "🔍 Recherche en cours..."
+                yield gr.update(), chat_history, status.value
                 
                 try:
-                    # Stream the response
-                    full_response = ""
-                    for chunk in rag.query_stream(question):
-                        full_response = chunk
-                        chat_history[-1][1] = full_response
-                        yield "", chat_history, "Génération de la réponse..."
+                    with gr.Blocks().queue(status_update_rate=False):
+                        full_response = ""
+                        for chunk in rag.query_stream(question):
+                            full_response = chunk
+                            chat_history[-1][1] = full_response
+                            yield "", chat_history, "✍️ Génération de la réponse..."
                     
-                    # Add sources if available
-                    if "Sources:" in full_response:
-                        status.value = "Réponse générée avec sources"
-                    else:
-                        status.value = "Réponse générée"
-                    
+                    status.value = "✅ Réponse générée"
                     yield "", chat_history, status.value
-                    
                 except Exception as e:
-                    status.value = f"Erreur: {str(e)}"
-                    chat_history[-1][1] = f"Une erreur est survenue: {str(e)}"
+                    status.value = f"❌ Erreur: {str(e)}"
+                    chat_history[-1][1] = f"Erreur: {str(e)}"
                     yield "", chat_history, status.value
-            
-            # Event handlers
-            msg.submit(
-                user, [msg, chatbot], [msg, chatbot], queue=False
-            ).then(
-                bot, chatbot, [msg, chatbot, status]
-            )
-            
-            submit_btn.click(
-                user, [msg, chatbot], [msg, chatbot], queue=False
-            ).then(
-                bot, chatbot, [msg, chatbot, status]
-            )
-            
-            clear_btn.click(
-                lambda: ([], "Prêt pour une nouvelle conversation"),
-                None, [chatbot, status], queue=False
-            )
-            
-            # Examples
-            gr.Examples(
-                examples=[
-                    "Quel est le sujet principal de ces documents?",
-                    "Résumez les points clés de la présentation",
-                    "Quelles sont les conclusions principales du rapport Word?",
-                    "Trouvez toutes les références aux chiffres clés"
-                ],
-                inputs=msg,
-                label="Exemples de questions"
-            )
 
-        demo.launch()
+        msg.submit(user, [msg, chatbot], [msg, chatbot]).then(
+            bot, chatbot, [msg, chatbot, status]
+        )
+        submit_btn.click(user, [msg, chatbot], [msg, chatbot]).then(
+            bot, chatbot, [msg, chatbot, status]
+        )
+        clear_btn.click(lambda: ([], "✅ Prêt"), None, [chatbot, status]) # Message plus court
 
+        gr.Examples(
+            examples=[
+                "Quels sont les documents disponibles?",
+                "Résumez le document principal",
+                "Quelles sont les politiques importantes?"
+            ],
+            inputs=msg
+        )
 
-
+    demo.launch()
 
 if __name__ == "__main__":
     main()
