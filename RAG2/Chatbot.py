@@ -1,9 +1,10 @@
 import os
 import argparse
-import time
-from typing import List, Dict, Optional, Generator
+import re
+from typing import List, Dict, Optional, Generator, Tuple
 from pathlib import Path
-
+from io import BytesIO
+import tempfile
 from langchain_chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -13,10 +14,15 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pypdf import PdfReader
 from pptx import Presentation
+from docx import Document as WordDocument
 
 import gradio as gr
 from gradio.themes.utils import colors, sizes
 from gradio.themes import Base as ThemeBase
+
+from office365.sharepoint.client_context import ClientContext
+from office365.sharepoint.files.file import File
+from office365.runtime.auth.user_credential import UserCredential
 
 import dotenv
 dotenv.load_dotenv()
@@ -25,6 +31,54 @@ EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
 LLM_MODEL = "gemma3"
 DB_DIR = "vectore/chroma_docs_db"
 DATA_DIR = "documents"
+
+
+class SharePointClient:
+    def __init__(self, site_url: str, username: str, password: str):
+        self.site_url = site_url
+        self.ctx = ClientContext(site_url).with_credentials(
+            UserCredential(username, password)
+        )
+
+    def download_folder_contents(self, folder_url: str, local_path: str) -> List[Tuple[str, str]]:
+        """Download all files from SharePoint folder recursively"""
+        downloaded_files = []
+        folder = self.ctx.web.get_folder_by_server_relative_url(folder_url)
+        self.ctx.load(folder)
+        self.ctx.execute_query()
+
+        files = folder.files
+        self.ctx.load(files)
+        self.ctx.execute_query()
+
+        # Ensure local directory exists
+        os.makedirs(local_path, exist_ok=True)
+
+        for file in files:
+            try:
+                # Download file content
+                file_content = File.open_binary(self.ctx, file.serverRelativeUrl)
+                
+                # Save to local file
+                file_path = os.path.join(local_path, file.name)
+                with open(file_path, "wb") as f:
+                    f.write(file_content.content)
+                
+                downloaded_files.append((file.name, file_path))
+                print(f"Downloaded: {file.name}")
+            except Exception as e:
+                print(f"Error downloading {file.name}: {str(e)}")
+
+        # Process subfolders recursively
+        folders = folder.folders
+        self.ctx.load(folders)
+        self.ctx.execute_query()
+
+        for subfolder in folders:
+            subfolder_path = os.path.join(local_path, subfolder.name)
+            downloaded_files.extend( self.download_folder_contents(subfolder.serverRelativeUrl, subfolder_path))
+        
+        return downloaded_files
 
 
 class CustomTheme(ThemeBase):
@@ -37,6 +91,7 @@ class CustomTheme(ThemeBase):
             radius_size=sizes.radius_md,
             text_size=sizes.text_md,
         )
+    
     def set_styles(self):
         super().set_styles()
         self.styles.update({
@@ -63,12 +118,16 @@ class CustomTheme(ThemeBase):
 
 
 class DocumentRAG:
-    def __init__(self, data_dir: str = DATA_DIR, db_dir: str = DB_DIR, rebuild: bool = False):
+    def __init__(self, data_dir: str = DATA_DIR, db_dir: str = DB_DIR, rebuild: bool = False,
+                 sharepoint_config: Optional[Dict] = None):
         self.data_dir = data_dir
         self.db_dir = db_dir
         
-        self.embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+        # Download from SharePoint if configured
+        if sharepoint_config:
+            self._download_from_sharepoint(sharepoint_config)
         
+        self.embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
         self.llm = OllamaLLM(model=LLM_MODEL)
         
         if rebuild and os.path.exists(db_dir):
@@ -90,28 +149,54 @@ class DocumentRAG:
         
         self.rag_chain = self._create_rag_chain()
     
+    def _download_from_sharepoint(self, config: Dict):
+        """Download documents from SharePoint"""
+        print("Downloading documents from SharePoint...")
+        
+        # Create temp directory if using SharePoint
+        if not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir)
+        
+        try:
+            sp_client = SharePointClient(
+                site_url=config["site_url"],
+                username=config["username"],
+                password=config["password"]
+            )
+            
+            downloaded = sp_client.download_folder_contents(
+                folder_url=config["folder_url"],
+                local_path=self.data_dir
+            )
+            print(f"Downloaded {len(downloaded)} files from SharePoint")
+        except Exception as e:
+            print(f"Error downloading from SharePoint: {str(e)}")
+            raise
+    
     def _build_vectorstore(self) -> Chroma:
         """Process documents and build vectorstore"""
         print("Processing documents and building vectorstore...")
         
-        # Traitement des fichiers PPTX
+        # Process all document types
         pptx_documents = self._process_pptx_files()
         print(f"Extracted {len(pptx_documents)} slides from presentations")
         
-        # Traitement des fichiers PDF
         pdf_documents = self._process_pdf_files()
         print(f"Extracted {len(pdf_documents)} pages from PDF documents")
         
-        # Combiner tous les documents
-        documents = pptx_documents + pdf_documents
+        word_documents = self._process_word_files()
+        print(f"Extracted {len(word_documents)} sections from Word documents")
+        
+        # Combine all documents
+        documents = pptx_documents + pdf_documents + word_documents
         
         if not documents:
-            raise ValueError("Aucun contenu n'a été extrait des documents. Vérifiez les fichiers.")
+            raise ValueError("No content extracted from documents. Please check your files.")
         
         chunks = self._create_chunks(documents)
         
         if not chunks:
-            raise ValueError("Aucun chunk n'a été créé à partir des documents. Vérifiez le contenu.")
+            raise ValueError("No chunks created from document content. Please check the content.")
         
         print(f"Created {len(chunks)} chunks from document content")
         
@@ -168,7 +253,7 @@ class DocumentRAG:
         return documents
     
     def _process_pptx_files(self) -> List[Document]:
-        """Basic but reliable PPTX file processing"""
+        """Process PowerPoint files and extract content"""
         documents = []
         
         for file_path in Path(self.data_dir).glob("**/*.pptx"):
@@ -205,6 +290,58 @@ class DocumentRAG:
                     )
                     documents.append(doc)
                     print(f"  Processed slide {slide_num} ({len(all_text)} chars)")
+                
+            except Exception as e:
+                print(f"Error processing {file_path}: {str(e)}")
+        
+        return documents
+    
+    def _process_word_files(self) -> List[Document]:
+        """Process Word files and extract content"""
+        documents = []
+        
+        for file_path in Path(self.data_dir).glob("**/*.docx"):
+            try:
+                print(f"Processing Word document: {file_path}")
+                doc = WordDocument(file_path)
+                
+                word_metadata = {
+                    "source": str(file_path),
+                    "file_name": file_path.name,
+                    "file_type": ".docx",
+                    "total_paragraphs": len(doc.paragraphs)
+                }
+                
+                # Extract text from paragraphs
+                full_text = []
+                for para in doc.paragraphs:
+                    if para.text.strip():
+                        full_text.append(para.text)
+                
+                # Extract text from tables
+                for table in doc.tables:
+                    for row in table.rows:
+                        for cell in row.cells:
+                            if cell.text.strip():
+                                full_text.append(cell.text)
+                
+                # Combine and clean text
+                full_text = "\n".join(full_text)
+                full_text = re.sub(r'\n\s*\n', '\n\n', full_text).strip()
+                
+                if not full_text:
+                    print(f"  Skipping empty document: {file_path}")
+                    continue
+                
+                # Create document with section headings
+                doc_content = f"Document: {file_path.name}\n\n{full_text}"
+                
+                doc_entry = Document(
+                    page_content=doc_content,
+                    metadata=word_metadata
+                )
+                documents.append(doc_entry)
+                print(f"  Processed document with {len(full_text)} characters")
                 
             except Exception as e:
                 print(f"Error processing {file_path}: {str(e)}")
@@ -279,9 +416,12 @@ class DocumentRAG:
                 if file_type == '.pptx':
                     item_num = doc.metadata.get('slide_number', 'unknown')
                     item_type = 'slide'
-                else:
+                elif file_type == '.pdf':
                     item_num = doc.metadata.get('page_number', 'unknown')
                     item_type = 'page'
+                else:
+                    item_num = 'N/A'
+                    item_type = 'section'
                     
                 print(f"Error creating chunks for {item_type} {item_num}: {e}")
         
@@ -311,7 +451,6 @@ class DocumentRAG:
         )
         
         def _format_docs(docs):
-            
             documents = {}
             for doc in docs:
                 source = doc.metadata.get("file_name", "Unknown")
@@ -323,9 +462,12 @@ class DocumentRAG:
                 if file_type == ".pptx":
                     item_num = doc.metadata.get("slide_number", 0)
                     item_type = "Slide"
-                else:
+                elif file_type == ".pdf":
                     item_num = doc.metadata.get("page_number", 0)
                     item_type = "Page"
+                else:
+                    item_num = "Section"
+                    item_type = "Section"
                 
                 if item_num not in documents[source]["items"]:
                     documents[source]["items"][item_num] = []
@@ -334,24 +476,35 @@ class DocumentRAG:
             
             formatted = []
             for doc_name, doc_info in documents.items():
-                doc_type = "Presentation" if doc_info["type"] == ".pptx" else "Document"
+                if doc_info["type"] == ".pptx":
+                    doc_type = "Presentation"
+                elif doc_info["type"] == ".pdf":
+                    doc_type = "PDF Document"
+                else:
+                    doc_type = "Word Document"
+                
                 formatted.append(f"{doc_type}: {doc_name}")
                 
                 for item_num in sorted(doc_info["items"].keys()):
-                    item_type = "Slide" if doc_info["type"] == ".pptx" else "Page"
+                    if doc_info["type"] == ".pptx":
+                        item_type = "Slide"
+                    elif doc_info["type"] == ".pdf":
+                        item_type = "Page"
+                    else:
+                        item_type = "Section"
+                    
                     item_content = "\n".join(doc_info["items"][item_num])
                     formatted.append(f"  {item_type} {item_num}: {item_content}")
                 formatted.append("")
             
             return "\n".join(formatted)
         
-        
         rag_chain = (
-        {"context": lambda x: _format_docs(self.retriever.invoke(x)),
-         "question": lambda x: x}
-        | context_prompt
-        | self.llm
-        | StrOutputParser()
+            {"context": lambda x: _format_docs(self.retriever.invoke(x)),
+             "question": lambda x: x}
+            | context_prompt
+            | self.llm
+            | StrOutputParser()
         )
         
         return rag_chain
@@ -397,9 +550,12 @@ class DocumentRAG:
                 if file_type == ".pptx":
                     item_num = doc.metadata.get("slide_number", "?")
                     item_type = "Slide"
-                else:
+                elif file_type == ".pdf":
                     item_num = doc.metadata.get("page_number", "?")
                     item_type = "Page"
+                else:
+                    item_num = "Section"
+                    item_type = "Section"
                 
                 key = f"{source} ({item_type} {item_num})"
                 if key not in sources:
@@ -414,26 +570,43 @@ class DocumentRAG:
 def main():
     """Main entry point for the application"""
     
-    parser = argparse.ArgumentParser(description="Document RAG System")
+    parser = argparse.ArgumentParser(description="Document RAG System with SharePoint Integration")
     parser.add_argument("--rebuild", action="store_true", help="Rebuild the vector database")
     parser.add_argument("--query", type=str, help="Run a specific query in non-interactive mode")
+    parser.add_argument("--sharepoint", action="store_true", help="Enable SharePoint integration")
     args = parser.parse_args()
     
-    rag = DocumentRAG(rebuild=args.rebuild)
+    # Configure SharePoint if enabled
+    sharepoint_config = None
+    if args.sharepoint:
+        sharepoint_config = {
+            "site_url": os.getenv("SHAREPOINT_SITE_URL"),
+            "username": os.getenv("SHAREPOINT_USERNAME"),
+            "password": os.getenv("SHAREPOINT_PASSWORD"),
+            "folder_url": os.getenv("SHAREPOINT_FOLDER_URL")
+        }
+    
+    rag = DocumentRAG(
+        rebuild=args.rebuild,
+        sharepoint_config=sharepoint_config
+    )
     
     if args.query:
         result = rag.query(args.query)
         print(f"\nQuery: {args.query}\n")
         print(f"Response: {result}\n")
     else:
+        # Launch the improved Gradio interface
         custom_theme = CustomTheme()
         
         with gr.Blocks(theme=custom_theme, title="Assistant Documentaire RAG") as demo:
+            # Header
             gr.Markdown("""
-            # 📚 Assistant Documentaire RAG
+            # Assistant Documentaire RAG
             Posez des questions sur vos documents et obtenez des réponses précises basées sur leur contenu.
             """)
             
+            # Chat interface
             chatbot = gr.Chatbot(
                 height=600,
                 bubble_full_width=False,
@@ -443,6 +616,7 @@ def main():
                 )
             )
             
+            # Input and controls
             with gr.Row():
                 msg = gr.Textbox(
                     placeholder="Posez votre question ici...",
@@ -453,34 +627,51 @@ def main():
                 submit_btn = gr.Button("Envoyer", variant="primary", scale=1)
                 clear_btn = gr.Button("Nouvelle conversation", variant="secondary", scale=1)
             
+            # Additional controls
             with gr.Accordion("Options avancées", open=False):
                 gr.Markdown("""
-                - Le système recherche dans les documents PDF et PPTX
-                - Les réponses sont générées uniquement à partir du contenu des documents
+                **Sources des documents:**
+                - Système de fichiers local
+                - SharePoint (si configuré)
+                
+                **Formats supportés:**
+                - Documents Word (.docx)
+                - Présentations PowerPoint (.pptx)
+                - Fichiers PDF (.pdf)
+                
+                **Fonctionnalités:**
+                - Réponses basées uniquement sur le contenu des documents
+                - Streaming des réponses en temps réel
+                - Références aux sources originales
                 """)
             
+            # System status
             status = gr.Textbox(
                 value="Système prêt à répondre à vos questions",
                 interactive=False,
                 label="Statut"
             )
             
+            # Chat functions
             def user(message, chat_history):
                 return "", chat_history + [[message, None]]
             
             def bot(chat_history):
                 question = chat_history[-1][0]
                 
-                status.value = "Recherche dans les documents..."
+                # Update status
+                status.value = "🔍 Recherche dans les documents..."
                 yield gr.update(), gr.update(), gr.update()
                 
                 try:
+                    # Stream the response
                     full_response = ""
                     for chunk in rag.query_stream(question):
                         full_response = chunk
                         chat_history[-1][1] = full_response
-                        yield "", chat_history, "✍️ Génération de la réponse..."
+                        yield "", chat_history, "Génération de la réponse..."
                     
+                    # Add sources if available
                     if "Sources:" in full_response:
                         status.value = "Réponse générée avec sources"
                     else:
@@ -493,6 +684,7 @@ def main():
                     chat_history[-1][1] = f"Une erreur est survenue: {str(e)}"
                     yield "", chat_history, status.value
             
+            # Event handlers
             msg.submit(
                 user, [msg, chatbot], [msg, chatbot], queue=False
             ).then(
@@ -510,17 +702,21 @@ def main():
                 None, [chatbot, status], queue=False
             )
             
+            # Examples
             gr.Examples(
                 examples=[
-                    "Quel est le sujet principal de ce document?",
+                    "Quel est le sujet principal de ces documents?",
                     "Résumez les points clés de la présentation",
-                    "Quelles sont les conclusions principales?"
+                    "Quelles sont les conclusions principales du rapport Word?",
+                    "Trouvez toutes les références aux chiffres clés"
                 ],
                 inputs=msg,
                 label="Exemples de questions"
             )
 
         demo.launch()
+
+
 
 
 if __name__ == "__main__":
