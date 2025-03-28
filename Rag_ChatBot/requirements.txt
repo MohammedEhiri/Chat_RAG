@@ -1,0 +1,26 @@
+# --- Core Frameworks ---
+streamlit
+ollama>=0.1.7           # For interacting with local LLMs via Ollama
+
+# --- Document Loading and Processing ---
+# unstructured uses different parsers based on file type.
+# [pdf] ensures pypdf (or similar) is installed for PDF parsing.
+unstructured[pdf]
+python-docx             # For .docx file parsing by unstructured
+lxml                    # Often used by unstructured for HTML/XML elements within files
+nltk                    # Used for sentence tokenization, potentially by unstructured or text splitters
+
+# --- Embeddings ---
+sentence-transformers   # For generating text embeddings locally
+
+# --- Vector Store ---
+chromadb>=0.4.24        # Local vector database
+
+# --- Image Handling (often needed implicitly by document libraries) ---
+Pillow
+
+# --- Potentially Needed Extras (Uncomment if features added or errors occur) ---
+# python-pptx           # For .pptx parsing by unstructured
+# beautifulsoup4        # For HTML parsing by unstructured
+# pytesseract           # For OCR within images (Requires Tesseract system installation)
+# unstructured[local-inference] # Installs *many* dependencies for local model-based processing (like Detectron2, Tesseract). Use if you need advanced layout detection/OCR and have resources. Can replace some explicit deps above but might be heavy.
