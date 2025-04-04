@@ -1,14 +1,11 @@
 import os
-import sys
 import argparse
 import logging
 import json
-import datetime
 import hashlib
 import torch
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple, Any
-from concurrent.futures import ThreadPoolExecutor
 import pdf2image
 from pdf2image.exceptions import PDFInfoNotInstalledError, PDFPageCountError, PDFSyntaxError
 from transformers import AutoProcessor, AutoModelForVision2Seq

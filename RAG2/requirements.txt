@@ -1,0 +1,35 @@
+# Core Python libraries are not included as they come with Python itself
+
+# Data processing and text libraries
+nltk
+pypdf
+python-pptx
+python-docx
+Pillow
+pytesseract # Optional for OCR
+
+# Vector DB and embeddings
+langchain
+langchain_chroma
+langchain_huggingface
+langchain_core
+langchain_community
+sentence-transformers
+
+# Text processing
+langchain_text_splitters
+
+# LLM and chains
+langchain_ollama
+
+# UI
+gradio
+
+# Machine learning
+torch
+transformers
+
+# Other dependencies
+argparse
+shutil
+rank_bm25

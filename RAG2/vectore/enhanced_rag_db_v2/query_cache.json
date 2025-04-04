@@ -1,0 +1,190 @@
+{
+  "f0fe4cfbc7a4904c5198070e9936c618": {
+    "answer": "Hi\n\n**Sources Consulted (Filtered & Re-ranked):**\n- Source 1: 02_Formation_Les_Architectures_EE_005141_V16.06.pdf (Locations: Pg 4, Pg 80, Pg 98, Pg 155, Pg 243, Pg 254, Pg 304)",
+    "sources_metadata": [
+      {
+        "chunk_hash_prefix": "8a4ccb39",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "189",
+        "original_doc_index": 152,
+        "page_number": 155,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "a1352875",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "3",
+        "original_doc_index": 3,
+        "page_number": 4,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "c6af9fbd",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "356",
+        "original_doc_index": 295,
+        "page_number": 304,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "b27e7f10",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "283",
+        "original_doc_index": 235,
+        "page_number": 243,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "24ee19af",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "295",
+        "original_doc_index": 246,
+        "page_number": 254,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "41b5409b",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "93",
+        "original_doc_index": 79,
+        "page_number": 80,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "total_pages": 305,
+        "page_number": 98,
+        "chunk_in_doc_id": 1,
+        "original_doc_index": 97,
+        "global_chunk_id": "121",
+        "chunk_hash_prefix": "9482f6f0"
+      },
+      {
+        "chunk_hash_prefix": "09e00d81",
+        "chunk_in_doc_id": 1,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "94",
+        "original_doc_index": 79,
+        "page_number": 80,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      }
+    ],
+    "timestamp": 1743802532.1346319
+  },
+  "0ca65e009404850fbf209a8b1ba0e42f": {
+    "answer": "Architecture is the arrangement of forms complex of edifices and the art of them to imagine, conceive and direct their realization\u2026\n\n\n**Sources Consulted (Filtered & Re-ranked):**\n- Source 1: 02_Formation_Les_Architectures_EE_005141_V16.06.pdf (Locations: Pg 5, Pg 20, Pg 39, Pg 40, Pg 41, Pg 46, Pg 47, Pg 48)",
+    "sources_metadata": [
+      {
+        "chunk_hash_prefix": "e3bc18de",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "4",
+        "original_doc_index": 4,
+        "page_number": 5,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "c64c01f0",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "47",
+        "original_doc_index": 40,
+        "page_number": 41,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "0ddfd226",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "54",
+        "original_doc_index": 47,
+        "page_number": 48,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "3605bb4b",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "46",
+        "original_doc_index": 39,
+        "page_number": 40,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "45a2feab",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "52",
+        "original_doc_index": 45,
+        "page_number": 46,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "4d091d35",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "53",
+        "original_doc_index": 46,
+        "page_number": 47,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "537a1651",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "45",
+        "original_doc_index": 38,
+        "page_number": 39,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "28878428",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "21",
+        "original_doc_index": 19,
+        "page_number": 20,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      }
+    ],
+    "timestamp": 1743802590.498732
+  }
+}
