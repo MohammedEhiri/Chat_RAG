@@ -24,13 +24,21 @@ from pptx import Presentation
 from docx import Document as WordDocument
 import nltk
 from PIL import Image
+
+
 # Make OCR optional
 try:
     import pytesseract
+    # Optionnel: Permettre de spécifier le chemin via une variable d'environnement
+    TESSERACT_CMD_PATH = os.environ.get("TESSERACT_CMD")
+    if TESSERACT_CMD_PATH:
+        pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD_PATH
+        logger.info(f"Using explicit Tesseract command path: {TESSERACT_CMD_PATH}")
     OCR_AVAILABLE = True
 except ImportError:
     OCR_AVAILABLE = False
-    logging.warning("pytesseract not found. Install it and Tesseract OCR for image text extraction.")
+    logger.warning("pytesseract library not found. Install it (`pip install pytesseract`) for OCR functionality.")
+    logger.warning("Also ensure the Tesseract OCR engine itself is installed on your system.")
 
 # Vector DB and embeddings
 from langchain_chroma import Chroma
@@ -84,8 +92,8 @@ from nltk.corpus import stopwords
 
 # --- Configuration ---
 EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2" # Faster than BGE, good starting point
-LLM_MODEL = "gemma3:1b" # As specified
-DB_DIR = Path("vectore/enhanced_rag_db_v2") # New dir for clarity
+LLM_MODEL = "gemma3" # As specified
+DB_DIR = Path("vectore1/enhanced_rag_db_v2") # New dir for clarity
 DATA_DIR = Path("documents") # As specified
 CACHE_METADATA_FILE = DB_DIR / "rag_cache_metadata.json"
 CHUNK_CACHE_FILE = DB_DIR / "chunk_cache.json" # <-- File to store chunks for BM25 loading
@@ -217,9 +225,24 @@ class ResponseCache:
 class DocumentProcessor:
     """Handles processing of various document types"""
 
-    def __init__(self, data_dir: Path):
+    def __init__(self, data_dir: Path, ocr_language: str = 'fra'): # <-- Ajout config langue
         self.data_dir = data_dir
-        self.ocr_available = OCR_AVAILABLE # Use global check
+        self.ocr_available = OCR_AVAILABLE # Utilise le flag global défini plus haut
+        self.ocr_language = ocr_language   # Stocke la langue pour l'utiliser
+
+        # Log initial sur la disponibilité de l'OCR
+        if self.ocr_available:
+            logger.info(f"OCR processing is enabled. Attempting language: '{self.ocr_language}'.")
+            # Optionnel: Faire un petit test ici pour voir si Tesseract répond ?
+            try:
+                pytesseract.get_tesseract_version()
+                logger.info(f"Tesseract version detected: {pytesseract.get_tesseract_version()}")
+            except Exception as e:
+                logger.error(f"Tesseract check failed. OCR might not work. Error: {e}")
+                self.ocr_available = False # Désactiver si le check échoue
+        else:
+            logger.warning("OCR processing is disabled (pytesseract import failed or check failed).")
+
 
     def process_pdf(self, file_path: Path) -> List[Document]:
         """Process PDF files with improved text and image extraction"""
@@ -232,54 +255,90 @@ class DocumentProcessor:
                  logger.warning(f"Skipping PDF with 0 pages: {file_path.name}")
                  return []
             pdf_metadata_base = {
-                "source": str(file_path.relative_to(self.data_dir, walk_up=True)) if self.data_dir in file_path.parents else file_path.name, # Handle relative path better
+                "source": str(file_path.relative_to(self.data_dir)) if file_path.is_relative_to(self.data_dir) else file_path.name,
                 "file_name": file_path.name,
                 "file_type": ".pdf",
                 "total_pages": num_pages
             }
+
+            ocr_performed_on_file = False
 
             for page_idx, page in enumerate(pdf.pages):
                 page_num = page_idx + 1
                 page_metadata = {**pdf_metadata_base, "page_number": page_num}
                 text = ""
                 try:
-                    text = page.extract_text() or "" # Ensure text is not None
+                    extracted = page.extract_text()
+                    text = extracted if extracted else ""
                 except Exception as text_extract_e:
-                     logger.warning(f"Could not extract text from page {page_num} of {file_path.name}: {text_extract_e}")
+                     logger.warning(f"Could not extract standard text from page {page_num} of {file_path.name}: {text_extract_e}")
 
                 image_text = ""
                 if self.ocr_available:
                     try:
-                        # Using page.images is efficient with pypdf
                         count = 0
-                        for img_obj in page.images:
+                        for img_obj in page.images: # img_obj est l'objet ImageFile ou similaire
                             count += 1
+                            ocr_performed_on_file = True
                             try:
-                                # Convert Pillow Image from pypdf Image object
-                                img = img_obj.to_pil()
+                                # --- MODIFICATION ICI ---
+                                # Accéder aux données brutes de l'image
+                                image_bytes = img_obj.data
+                                # Ouvrir l'image à partir des bytes en utilisant PIL via BytesIO
+                                img = Image.open(BytesIO(image_bytes))
+                                # --- FIN DE LA MODIFICATION ---
+
+                                # Procéder à l'OCR sur l'objet PIL 'img'
                                 ocr_text = pytesseract.image_to_string(img)
-                                if ocr_text.strip():
-                                    image_text += f"\n[Image {count} on Page {page_num} Content]:\n{ocr_text.strip()}\n"
+                                ocr_text_stripped = ocr_text.strip()
+
+                                if ocr_text_stripped:
+                                    image_text += f"\n[Image {count} on Page {page_num} Content]:\n{ocr_text_stripped}\n"
+                                    logger.info(f"  Successfully OCR'd image {count} on page {page_num} of {file_path.name} ({len(ocr_text_stripped)} chars).")
+                                else:
+                                    logger.debug(f"  OCR produced no text for image {count} on page {page_num} of {file_path.name}.")
+
+                            except pytesseract.TesseractNotFoundError:
+                                logger.error(f"TESSERACT NOT FOUND error on page {page_num} of {file_path.name}. Check installation, PATH, and language data ('{self.ocr_language}.traineddata').")
+                                # logger.warning("Disabling further OCR attempts due to TesseractNotFoundError.")
+                                # self.ocr_available = False
+                                # break
+                            except ImportError:
+                                 logger.error("PIL (Pillow) or io modules not available. Cannot process images.")
+                                 self.ocr_available = False # Désactiver OCR si PIL manque
+                                 break # Arrêter traitement images pour cette page
                             except Exception as ocr_e:
-                                logger.debug(f"OCR failed for image {count} on page {page_num} in {file_path.name}: {ocr_e}")
+                                # Capter les erreurs potentielles de PIL (ex: format image inconnu, données corrompues)
+                                # ou les autres erreurs de Tesseract.
+                                logger.warning(f"OCR or Image Processing failed for image {count} on page {page_num} in {file_path.name}: {type(ocr_e).__name__} - {ocr_e}")
+
+                        # if not self.ocr_available: break
+
+                    except AttributeError as attr_err:
+                         # Si même '.data' n'existe pas, logguer une erreur différente
+                         logger.error(f"Could not access image data attribute (e.g., '.data') for an image on page {page_num} of {file_path.name}: {attr_err}")
                     except Exception as img_extract_e:
-                         logger.warning(f"Could not extract images from page {page_num} of {file_path.name}: {img_extract_e}")
+                         logger.warning(f"Could not extract images object from page {page_num} of {file_path.name}: {img_extract_e}")
 
                 combined_text = (text.strip() + "\n" + image_text.strip()).strip()
 
                 if not combined_text:
-                    logger.debug(f"  Skipping page {page_num} in {file_path.name} (no text found)")
+                    logger.debug(f"  Skipping page {page_num} in {file_path.name} (no text found after extraction and OCR)")
                     continue
 
-                # Add context marker
                 contextual_text = f"[PDF Page {page_num}/{num_pages}]\n{combined_text}"
                 doc = Document(page_content=contextual_text, metadata=page_metadata)
                 documents.append(doc)
+
+            if ocr_performed_on_file and not any("[Image" in d.page_content for d in documents if d.metadata.get('file_name')==file_path.name):
+                 logger.warning(f"OCR was attempted on images in {file_path.name}, but no OCR text seems to have been successfully added.")
+
         except Exception as e:
-            logger.error(f"Error processing PDF {file_path}: {e}", exc_info=True)
+            logger.error(f"Error processing PDF file {file_path}: {e}", exc_info=True)
 
         return documents
-
+    
+    # --- MÉTHODE MANQUANTE À AJOUTER/DÉCOMMENTER ICI ---
     def process_pptx(self, file_path: Path) -> List[Document]:
         """Process PowerPoint files with improved text extraction"""
         documents = []
@@ -291,7 +350,7 @@ class DocumentProcessor:
                  logger.warning(f"Skipping PPTX with 0 slides: {file_path.name}")
                  return []
             pptx_metadata_base = {
-                "source": str(file_path.relative_to(self.data_dir, walk_up=True)) if self.data_dir in file_path.parents else file_path.name,
+                "source": str(file_path.relative_to(self.data_dir)) if file_path.is_relative_to(self.data_dir) else file_path.name,
                 "file_name": file_path.name,
                 "file_type": ".pptx",
                 "total_slides": num_slides
@@ -301,16 +360,17 @@ class DocumentProcessor:
                 slide_num = slide_idx + 1
                 slide_metadata = {**pptx_metadata_base, "slide_number": slide_num}
 
+                # Utilise la méthode helper pour extraire texte et titre
                 all_text_content, slide_title = self._extract_all_text_from_slide(slide)
 
                 if slide_title:
-                     slide_metadata["slide_title"] = slide_title
+                     slide_metadata["slide_title"] = slide_title # Ajouter le titre aux métadonnées
 
                 if not all_text_content or not all_text_content.strip():
                     logger.debug(f"  Skipping empty slide {slide_num} in {file_path.name}")
                     continue
 
-                # Add context marker
+                # Ajouter le marqueur de contexte
                 title_marker = f" - Title: {slide_title}" if slide_title else ""
                 contextual_text = f"[Slide {slide_num}/{num_slides}{title_marker}]\n{all_text_content}"
 
@@ -582,7 +642,7 @@ class QueryProcessor:
         self.llm = llm
         # Combine stopwords from both languages
         try:
-            self.stop_words = set(stopwords.words('english')).union(set(stopwords.words('french')))
+            self.stop_words = set(stopwords.words('french')).union(set(stopwords.words('french')))
         except Exception as e:
              logger.warning(f"Could not load NLTK stopwords, proceeding without them: {e}")
              self.stop_words = set()
@@ -591,10 +651,10 @@ class QueryProcessor:
     def expand_query(self, query: str, config: Optional[RunnableConfig] = None) -> str:
         """Expand query with related terms using LLM (Synchronous version)"""
         expansion_prompt = PromptTemplate.from_template(
-            """Analyze this search query: "{query}"
-            Generate 3-5 additional relevant search keywords or synonyms that preserve the original intent but broaden the search possibilities.
-            Focus on extracting key concepts and adding variations. Examples: 'cost reduction' -> 'expense saving, budget optimization, efficiency improvement'; 'network security protocols' -> 'firewall configuration, VPN standards, TLS encryption, intrusion detection systems'.
-            Return ONLY the additional keywords separated by spaces, nothing else. Do not repeat terms from the original query."""
+            """Analysez cette requête de recherche : "{query}"
+Générez 3-5 mots-clés supplémentaires pertinents ou des synonymes qui préservent l'intention originale tout en élargissant les possibilités de recherche.
+Concentrez-vous sur l'extraction des concepts clés et l'ajout de variations. Exemples : 'réduction des coûts' -> 'économie d'argent, optimisation budgétaire, amélioration de l'efficacité' ; 'protocoles de sécurité réseau' -> 'configuration du pare-feu, normes VPN, chiffrement TLS, systèmes de détection d'intrusion'.
+Retournez UNIQUEMENT les mots-clés supplémentaires séparés par des espaces, rien d'autre. N'insérez pas de termes provenant de la requête originale."""
         )
         logger.debug(f"Attempting query expansion for: {query}")
         try:
@@ -667,7 +727,7 @@ class EnhancedRAG:
         self.full_retriever = self._create_full_retriever_pipeline()
 
         # Initialize query processor (needs LLM)
-        self.query_processor = QueryProcessor(self.llm)
+        #self.query_processor = QueryProcessor(self.llm)
 
         # Response cache
         self.response_cache = ResponseCache(RESULT_CACHE_FILE)
@@ -994,17 +1054,28 @@ class EnhancedRAG:
         # Prompt template for the final answer generation
         # (Using a slightly modified version of the user's template)
         prompt_template = ChatPromptTemplate.from_template(
-            """You are an expert AI assistant. Answer the question based **only** on the provided context and conversation history. Be concise and factual. If the information isn't available in the context, clearly state that.
+            """
+            Vous êtes un assistant IA chargé de répondre aux questions en vous basant **uniquement** sur le contexte fourni et l'historique de la conversation.
 
-CONVERSATION HISTORY:
-{chat_history}
+            HISTORIQUE DE LA CONVERSATION:
+            {chat_history}
 
-RELEVANT CONTEXT (Filtered and Re-ranked):
-{context}
+            CONTEXTE RÉCUPÉRÉ (Documents Pertinents):
+            {context}
 
-Question: {question}
+            Directives Strictes:
+            1.  Basez votre réponse **exclusivement** sur le CONTEXTE RÉCUPÉRÉ et l'HISTORIQUE DE LA CONVERSATION.
+            2.  La reponse dois avoir tous les details possibles.
+            3.  **Ne supposez rien et n'inventez aucune information.** Si la réponse n'est pas dans le contexte, déclarez explicitement que l'information n'est pas disponible dans les documents fournis.
+            4.  Répondez directement à la question posée.
+            5.  **Citez vos sources** en utilisant le format `[Source]` où Source est la source indiqué dans le CONTEXTE RÉCUPÉRÉ. Intégrez les citations de manière fluide dans votre réponse.
+            6.  Gardez un ton factuel et professionnel.
+            7.  Si la question fait référence à la conversation précédente, tenez-en compte.
 
-Answer:"""
+            Question: {question}
+
+            Réponse (basée uniquement sur le contexte et l'historique):
+            """
         )
 
         def format_docs(docs: List[Document]) -> str:
@@ -1033,7 +1104,7 @@ Answer:"""
             | RunnableParallel( # Step 2: Expand query and format history
                  {
                      # Expand query using QueryProcessor (sync version)
-                     "expanded_question": RunnableLambda(lambda x: self.query_processor.expand_query(x["question"], x["config"])),
+                     "expanded_question": RunnableLambda(lambda x: x["question"]),
                      "chat_history": lambda x: format_history(x["chat_history_tuples"]),
                      "original_question": itemgetter("question"), # Pass original q through
                      "config": itemgetter("config")

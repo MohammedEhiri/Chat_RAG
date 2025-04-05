@@ -1,70 +1,37 @@
 {
-  "f0fe4cfbc7a4904c5198070e9936c618": {
-    "answer": "Hi\n\n**Sources Consulted (Filtered & Re-ranked):**\n- Source 1: 02_Formation_Les_Architectures_EE_005141_V16.06.pdf (Locations: Pg 4, Pg 80, Pg 98, Pg 155, Pg 243, Pg 254, Pg 304)",
+  "c430dd2cc0921a64d3b8d26da00cc5ec": {
+    "answer": "Les types de r\u00e9seaux pr\u00e9sent\u00e9s dans le contexte sont les r\u00e9seaux Bit DOMINANT et Bit RECESSIF [Source: \"Les types de R\u00e9seaux\"]. Ces r\u00e9seaux pr\u00e9sentent des caract\u00e9ristiques sp\u00e9cifiques concernant l'\u00e9tat \u00e9lectrique sur le bus, l'\u00e9mission p\u00e9riodique de messages, la tol\u00e9rance aux fautes et la cartographie [Source: \"Les types de R\u00e9seaux\"].  De plus, le contexte d\u00e9crit les types d'organes et leurs interactions avec les r\u00e9seaux, notamment en termes de r\u00e9veil, de maintien, de mise en veille et de consommation \u00e9nerg\u00e9tique limit\u00e9e [Source: \"Les types d'Organes\"]. Cet autodiagnostic est utilis\u00e9 principalement dans le traitement des sous-r\u00e9seaux [Source: \"Cet autodiagnostic est utilis\u00e9 principalement dans le traitement des sous-r\u00e9seaux\"].\n\n\n**Sources Consulted (Filtered & Re-ranked):**\n- Source 1: 02_Formation_Les_Architectures_EE_005141_V16.06.pdf (Locations: Pg 88, Pg 89, Pg 90, Pg 104, Pg 130, Pg 177, Pg 286)",
     "sources_metadata": [
       {
-        "chunk_hash_prefix": "8a4ccb39",
-        "chunk_in_doc_id": 0,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "file_type": ".pdf",
-        "global_chunk_id": "189",
-        "original_doc_index": 152,
-        "page_number": 155,
-        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
-        "total_pages": 305
+        "total_pages": 305,
+        "page_number": 89,
+        "chunk_in_doc_id": 1,
+        "original_doc_index": 88,
+        "global_chunk_id": "106",
+        "chunk_hash_prefix": "28390b50"
       },
       {
-        "chunk_hash_prefix": "a1352875",
-        "chunk_in_doc_id": 0,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "file_type": ".pdf",
-        "global_chunk_id": "3",
-        "original_doc_index": 3,
-        "page_number": 4,
-        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
-        "total_pages": 305
+        "total_pages": 305,
+        "page_number": 89,
+        "chunk_in_doc_id": 0,
+        "original_doc_index": 88,
+        "global_chunk_id": "105",
+        "chunk_hash_prefix": "41389ff0"
       },
       {
-        "chunk_hash_prefix": "c6af9fbd",
+        "chunk_hash_prefix": "af651973",
         "chunk_in_doc_id": 0,
         "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "file_type": ".pdf",
-        "global_chunk_id": "356",
-        "original_doc_index": 295,
-        "page_number": 304,
-        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
-        "total_pages": 305
-      },
-      {
-        "chunk_hash_prefix": "b27e7f10",
-        "chunk_in_doc_id": 0,
-        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
-        "file_type": ".pdf",
-        "global_chunk_id": "283",
-        "original_doc_index": 235,
-        "page_number": 243,
-        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
-        "total_pages": 305
-      },
-      {
-        "chunk_hash_prefix": "24ee19af",
-        "chunk_in_doc_id": 0,
-        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
-        "file_type": ".pdf",
-        "global_chunk_id": "295",
-        "original_doc_index": 246,
-        "page_number": 254,
-        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
-        "total_pages": 305
-      },
-      {
-        "chunk_hash_prefix": "41b5409b",
-        "chunk_in_doc_id": 0,
-        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
-        "file_type": ".pdf",
-        "global_chunk_id": "93",
-        "original_doc_index": 79,
-        "page_number": 80,
+        "global_chunk_id": "104",
+        "original_doc_index": 87,
+        "page_number": 88,
         "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "total_pages": 305
       },
@@ -73,28 +40,61 @@
         "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "file_type": ".pdf",
         "total_pages": 305,
-        "page_number": 98,
-        "chunk_in_doc_id": 1,
-        "original_doc_index": 97,
-        "global_chunk_id": "121",
-        "chunk_hash_prefix": "9482f6f0"
+        "page_number": 130,
+        "chunk_in_doc_id": 0,
+        "original_doc_index": 129,
+        "global_chunk_id": "158",
+        "chunk_hash_prefix": "7c46284e"
       },
       {
-        "chunk_hash_prefix": "09e00d81",
-        "chunk_in_doc_id": 1,
+        "chunk_hash_prefix": "90a03d23",
+        "chunk_in_doc_id": 0,
         "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "file_type": ".pdf",
-        "global_chunk_id": "94",
-        "original_doc_index": 79,
-        "page_number": 80,
+        "global_chunk_id": "107",
+        "original_doc_index": 89,
+        "page_number": 90,
         "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "5ef8b7f5",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "127",
+        "original_doc_index": 103,
+        "page_number": 104,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "62594613",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "336",
+        "original_doc_index": 278,
+        "page_number": 286,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "total_pages": 305,
+        "page_number": 177,
+        "chunk_in_doc_id": 0,
+        "original_doc_index": 172,
+        "global_chunk_id": "210",
+        "chunk_hash_prefix": "3a7059c5"
       }
     ],
-    "timestamp": 1743802532.1346319
+    "timestamp": 1743884751.009853
   },
-  "0ca65e009404850fbf209a8b1ba0e42f": {
-    "answer": "Architecture is the arrangement of forms complex of edifices and the art of them to imagine, conceive and direct their realization\u2026\n\n\n**Sources Consulted (Filtered & Re-ranked):**\n- Source 1: 02_Formation_Les_Architectures_EE_005141_V16.06.pdf (Locations: Pg 5, Pg 20, Pg 39, Pg 40, Pg 41, Pg 46, Pg 47, Pg 48)",
+  "963b6dcd72ca5cece12b7d80ac088585": {
+    "answer": "Une architecture, selon le contexte fourni, est l\u2019agencement des formes complexes d\u2019\u00e9difices et l\u2019art de les imaginer, de les concevoir et de diriger leur r\u00e9alisation [Source: Architecture (d\u00e9finition Wikip\u00e9dia)]. Par extension, elle d\u00e9signe \u00e9galement la conception de syst\u00e8mes organis\u00e9s en structures complexes [Source: Architecture (d\u00e9finition Wikip\u00e9dia)]. Plus pr\u00e9cis\u00e9ment, dans le contexte de syst\u00e8mes complexes comme ceux utilis\u00e9s dans les v\u00e9hicules, une architecture EE (Architecture \u00c9lectrique) est d\u00e9finie comme une infrastructure qui met \u00e0 disposition les canaux d\u2019\u00e9change permettant de relier tous les sous-domaines tels que GMP, LAS, Body, Confort, InfoDiv, IHM [Source: D\u00e9finition Architecture EE : Une Architecture = Une Infrastructure].  Elle comprend \u00e9galement les \u00e9l\u00e9ments \u00e9lectriques et de gestion de l\u2019\u00e9nergie, ainsi que les logiciels de base et applicatifs [Source: D\u00e9finition Architecture EE : Une Architecture = Une Infrastructure].  En r\u00e9sum\u00e9, l'architecture est la conception d'un syst\u00e8me organis\u00e9 en structures complexes, incluant des \u00e9l\u00e9ments fonctionnels, \u00e9lectriques et logiciels [Source: D\u00e9finition Architecture EE : Une Architecture = Une Infrastructure].\n\n\n**Sources Consulted (Filtered & Re-ranked):**\n- Source 1: 02_Formation_Les_Architectures_EE_005141_V16.06.pdf (Locations: Pg 5, Pg 6, Pg 39, Pg 40, Pg 41, Pg 48, Pg 50, Pg 139)",
     "sources_metadata": [
       {
         "chunk_hash_prefix": "e3bc18de",
@@ -104,6 +104,17 @@
         "global_chunk_id": "4",
         "original_doc_index": 4,
         "page_number": 5,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "eeedb2af",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "6",
+        "original_doc_index": 5,
+        "page_number": 6,
         "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "total_pages": 305
       },
@@ -119,13 +130,13 @@
         "total_pages": 305
       },
       {
-        "chunk_hash_prefix": "0ddfd226",
+        "chunk_hash_prefix": "537a1651",
         "chunk_in_doc_id": 0,
         "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "file_type": ".pdf",
-        "global_chunk_id": "54",
-        "original_doc_index": 47,
-        "page_number": 48,
+        "global_chunk_id": "45",
+        "original_doc_index": 38,
+        "page_number": 39,
         "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "total_pages": 305
       },
@@ -141,50 +152,321 @@
         "total_pages": 305
       },
       {
-        "chunk_hash_prefix": "45a2feab",
+        "chunk_hash_prefix": "61830c66",
         "chunk_in_doc_id": 0,
         "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "file_type": ".pdf",
-        "global_chunk_id": "52",
-        "original_doc_index": 45,
-        "page_number": 46,
+        "global_chunk_id": "168",
+        "original_doc_index": 138,
+        "page_number": 139,
         "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "total_pages": 305
       },
       {
-        "chunk_hash_prefix": "4d091d35",
+        "chunk_hash_prefix": "1da72eea",
         "chunk_in_doc_id": 0,
         "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "file_type": ".pdf",
-        "global_chunk_id": "53",
-        "original_doc_index": 46,
-        "page_number": 47,
+        "global_chunk_id": "57",
+        "original_doc_index": 49,
+        "page_number": 50,
         "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "total_pages": 305
       },
       {
-        "chunk_hash_prefix": "537a1651",
+        "chunk_hash_prefix": "0ddfd226",
         "chunk_in_doc_id": 0,
         "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "file_type": ".pdf",
-        "global_chunk_id": "45",
-        "original_doc_index": 38,
-        "page_number": 39,
-        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
-        "total_pages": 305
-      },
-      {
-        "chunk_hash_prefix": "28878428",
-        "chunk_in_doc_id": 0,
-        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
-        "file_type": ".pdf",
-        "global_chunk_id": "21",
-        "original_doc_index": 19,
-        "page_number": 20,
+        "global_chunk_id": "54",
+        "original_doc_index": 47,
+        "page_number": 48,
         "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
         "total_pages": 305
       }
     ],
-    "timestamp": 1743802590.498732
+    "timestamp": 1743884963.508529
+  },
+  "18c02b472691c0bd47761327c0321826": {
+    "answer": "Les d\u00e9ploiements des r\u00e9seaux, tels que d\u00e9crits dans les documents fournis, couvrent une p\u00e9riode allant de 2000 \u00e0 2010 et incluent des exemples tels que VAN, CAN et LIN [Source: Les Phases de vie des R\u00e9seaux]. Ces d\u00e9ploiements sont associ\u00e9s \u00e0 la connectivit\u00e9 avec le grand public [Source: Connectivit\u00e9 avec le Grand Public] et \u00e0 la comparaison des r\u00e9seaux [Source: Comparaison des r\u00e9seaux].  Plus pr\u00e9cis\u00e9ment, les r\u00e9seaux sont caract\u00e9ris\u00e9s par un \u00e9tat \u00e9lectrique sur le bus, o\u00f9 Dominant = 0 et R\u00e9cessif = 1, ainsi que par l'\u00e9mission p\u00e9riodique des messages ou l'\u00e9mission \u00e9v\u00e9nementielle [Source: Etat \u00e9lectrique sur le bus].  Ces r\u00e9seaux sont con\u00e7us pour \u00eatre tol\u00e9rants aux fautes, en permettant une communication sur un seul fil possible [Source: Etat \u00e9lectrique sur le bus].  Les documents mettent \u00e9galement en \u00e9vidence l'importance des Politiques Techniques, notamment en termes de Fonctionnel & Diagnostic et d'Electronique & R\u00e9seaux [Source: Les Politiques Techniques : Fonctionnel & Diagnostic et Electronique & R\u00e9seaux].\n\n\n**Sources Consulted (Filtered & Re-ranked):**\n- Source 1: 02_Formation_Les_Architectures_EE_005141_V16.06.pdf (Locations: Pg 18, Pg 20, Pg 88, Pg 89, Pg 90, Pg 121, Pg 246, Pg 286)",
+    "sources_metadata": [
+      {
+        "chunk_hash_prefix": "90a03d23",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "107",
+        "original_doc_index": 89,
+        "page_number": 90,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "af651973",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "104",
+        "original_doc_index": 87,
+        "page_number": 88,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "9ac50e65",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "19",
+        "original_doc_index": 17,
+        "page_number": 18,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "5b3e5009",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "286",
+        "original_doc_index": 238,
+        "page_number": 246,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "62594613",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "336",
+        "original_doc_index": 278,
+        "page_number": 286,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "total_pages": 305,
+        "page_number": 121,
+        "chunk_in_doc_id": 0,
+        "original_doc_index": 120,
+        "global_chunk_id": "148",
+        "chunk_hash_prefix": "be886eac"
+      },
+      {
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "total_pages": 305,
+        "page_number": 20,
+        "chunk_in_doc_id": 0,
+        "original_doc_index": 19,
+        "global_chunk_id": "21",
+        "chunk_hash_prefix": "28878428"
+      },
+      {
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "total_pages": 305,
+        "page_number": 89,
+        "chunk_in_doc_id": 1,
+        "original_doc_index": 88,
+        "global_chunk_id": "106",
+        "chunk_hash_prefix": "28390b50"
+      }
+    ],
+    "timestamp": 1743885035.940514
+  },
+  "2ae36c342c59a952f0ee0ea4237ebe59": {
+    "answer": "Le mod\u00e8le de croissance de l\u2019\u00e9lectronique automobile, tel que d\u00e9crit dans le contexte, montre une progression significative au cours des 25 ans consid\u00e9r\u00e9s.  Plus pr\u00e9cis\u00e9ment, le nombre de fonctions a augment\u00e9 de deux fois et demi (2,5 calculateurs/an), tandis que le nombre de calculateurs est rest\u00e9 relativement stable.  En 2000, il y avait 50 calculateurs, et en 2010, il y en avait toujours 50.  Cependant, le nombre de fonctions a augment\u00e9 de deux fois et demi, ce qui indique une augmentation de la complexit\u00e9 des syst\u00e8mes automobiles.  En 2000, le nombre de fonctions \u00e9tait de 50, et en 2010, il \u00e9tait de 125.  En outre, le nombre de r\u00e9seaux a augment\u00e9 de 611 millions de n\u0153uds en 2005 \u00e0 1,5 milliard en 2014.  Le logiciel repr\u00e9sente 2/3 des innovations, et la progression du logiciel a \u00e9t\u00e9 de 100% entre 2000 et 2010.  En 1990, la ligne de code dans un v\u00e9hicule \u00e9tait de 1 million, et en 2015, elle \u00e9tait de 80 millions (90 UCE).  L'automobile repr\u00e9sente seulement 7,5% du march\u00e9 mondial des semi-conducteurs.  Le co\u00fbt de l'\u00e9lectronique a augment\u00e9 de 25% en 2002 \u00e0 35% en 2015.  Le mod\u00e8le a \u00e9volu\u00e9 de l'autoradio \u00e0 transistors au \u00b5C multi-c\u0153urs et aux r\u00e9seaux informatiques (demain Ethernet).  En r\u00e9sum\u00e9, le nombre de fonctions a augment\u00e9 de 50, le nombre de calculateurs est rest\u00e9 \u00e0 50, le nombre de r\u00e9seaux a augment\u00e9 de 611 millions de n\u0153uds en 2005 \u00e0 1,5 milliard en 2014, et le co\u00fbt de l'\u00e9lectronique a augment\u00e9 de 25% en 2002 \u00e0 35% en 2015 [Source].  Des exemples de mod\u00e8les de v\u00e9hicules qui ont utilis\u00e9 ces architectures incluent les mod\u00e8les PF1 (206, C3, C3 Pluriel, C2, 1007), PF2 (Xsara, 307, Berlingo/Partner, Picasso), PF3 (607, C5, 406) et PFCOOP (C8/807) [Source].  L'architecture \"bi VAN/CAN\" a \u00e9galement \u00e9t\u00e9 utilis\u00e9e [Source].  L'\u00e9lectronique automobile comprend 850 fonctions, 50 calculateurs, 10 r\u00e9seaux, 6800 signaux et 3kW [Source].\n\n**Sources Consulted (Filtered & Re-ranked):**\n- Source 1: 02_Formation_Les_Architectures_EE_005141_V16.06.pdf (Locations: Pg 8, Pg 12, Pg 28, Pg 65, Pg 70, Pg 147, Pg 220, Pg 300)",
+    "sources_metadata": [
+      {
+        "chunk_hash_prefix": "ee92c15a",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "259",
+        "original_doc_index": 215,
+        "page_number": 220,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "9ee96539",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "74",
+        "original_doc_index": 64,
+        "page_number": 65,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "45779b54",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "8",
+        "original_doc_index": 7,
+        "page_number": 8,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "total_pages": 305,
+        "page_number": 147,
+        "chunk_in_doc_id": 0,
+        "original_doc_index": 145,
+        "global_chunk_id": "180",
+        "chunk_hash_prefix": "d74054d8"
+      },
+      {
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "total_pages": 305,
+        "page_number": 70,
+        "chunk_in_doc_id": 0,
+        "original_doc_index": 69,
+        "global_chunk_id": "80",
+        "chunk_hash_prefix": "f82daf1c"
+      },
+      {
+        "chunk_hash_prefix": "ea6d8fd2",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "12",
+        "original_doc_index": 11,
+        "page_number": 12,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "a8682336",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "33",
+        "original_doc_index": 27,
+        "page_number": 28,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "6ead1943",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "351",
+        "original_doc_index": 291,
+        "page_number": 300,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      }
+    ],
+    "timestamp": 1743885277.9215171
+  },
+  "00a4203009f2f4f31250cca8339b3ee8": {
+    "answer": "Il est impossible de d\u00e9terminer l'ann\u00e9e exacte du syst\u00e8me \u00e9lectrique d'un v\u00e9hicule de passager uniquement sur la base des documents fournis. Les informations disponibles concernent des sp\u00e9cifications techniques telles que les tensions de d\u00e9marrage du moteur [Source: 1], la commutation de charge inductive [Source: 4], l'affaiblissement du champ d'alternateur [Source: 5], la d\u00e9charge et la recharge de batterie [Source: 6 & 7], ainsi que des donn\u00e9es relatives aux signaux \u00e9lectriques (2600 powertrain signals, 4000 body signals) et aux classes de courant (Classe 7, Classe 8, etc.).  Ces donn\u00e9es ne permettent pas de d\u00e9terminer l'ann\u00e9e du syst\u00e8me \u00e9lectrique. [Source: Toutes les sources du contexte]\n\n\n**Sources Consulted (Filtered & Re-ranked):**\n- Source 1: 02_Formation_Les_Architectures_EE_005141_V16.06.pdf (Locations: Pg 45, Pg 62, Pg 65, Pg 68, Pg 77, Pg 141, Pg 192, Pg 285)",
+    "sources_metadata": [
+      {
+        "chunk_hash_prefix": "9ee96539",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "74",
+        "original_doc_index": 64,
+        "page_number": 65,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "total_pages": 305,
+        "page_number": 62,
+        "chunk_in_doc_id": 0,
+        "original_doc_index": 61,
+        "global_chunk_id": "71",
+        "chunk_hash_prefix": "92283c6b"
+      },
+      {
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "total_pages": 305,
+        "page_number": 285,
+        "chunk_in_doc_id": 0,
+        "original_doc_index": 277,
+        "global_chunk_id": "334",
+        "chunk_hash_prefix": "8b92a7e6"
+      },
+      {
+        "chunk_hash_prefix": "ba8a193c",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "89",
+        "original_doc_index": 76,
+        "page_number": 77,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "49441fb1",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "78",
+        "original_doc_index": 67,
+        "page_number": 68,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "dcf78d2e",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "230",
+        "original_doc_index": 187,
+        "page_number": 192,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "a5a2e553",
+        "chunk_in_doc_id": 1,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "172",
+        "original_doc_index": 140,
+        "page_number": 141,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      },
+      {
+        "chunk_hash_prefix": "574ceb09",
+        "chunk_in_doc_id": 0,
+        "file_name": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "file_type": ".pdf",
+        "global_chunk_id": "51",
+        "original_doc_index": 44,
+        "page_number": 45,
+        "source": "02_Formation_Les_Architectures_EE_005141_V16.06.pdf",
+        "total_pages": 305
+      }
+    ],
+    "timestamp": 1743887450.70057
   }
 }
